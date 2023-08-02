@@ -162,15 +162,15 @@ async function addDepartment() {
         name: 'dptName'
     }
     try {
-        const {dptName} = inq.prompt(depPrompt)
-        await db.promise().query("INSERT INTO departments(name) VALUES (?)", dptName)
+        const {dptName} = await inq.prompt(depPrompt)
+        await db.promise().query("INSERT INTO departments (name) VALUES (?)", [dptName])
     }catch(err){
         return console.log("Error while adding department", err);
     }
 }
 
 async function addRole() {
-
+    
 }
 
 async function addEmployee() {
