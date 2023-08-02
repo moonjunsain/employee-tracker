@@ -5,7 +5,7 @@
     "mysql2": "^3.5.2"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "name": "employee-tracker",
   "description": "",

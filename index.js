@@ -24,11 +24,7 @@ db.connect((err)=> {
 
 
 
-const depPrompt = {
-    type: 'input',
-    message: 'Enter the name of the new department',
-    name: 'dptName'
-}
+
 
 const rolePromptConstructor = (listOfDeptmnt) => {
     return [
@@ -100,57 +96,88 @@ async function init(){
         // execute different functions depending on user decision
         switch (decision) {
             case "View all departments":
-              viewAllDepartments();
+              await viewAllDepartments();
               break;
             case "View all roles":
-              viewAllRoles();
+              await viewAllRoles();
               break;
             case "View all employees":
-              viewAllEmployees();
+              await viewAllEmployees();
               break;
             case "Add a department":
-              addDepartment();
+              await addDepartment();
               break;
             case "Add a role":
-              addRole();
+              await addRole();
               break;
             case "Add an employee":
-              addEmployee();
+              await addEmployee();
               break;
             case "Update an employee role":
-              updateEmployeeRole();
+              await updateEmployeeRole();
               break;
           }
 
     }
 }
 
-function viewAllDepartments(){
-    // display the departments in a nice formatted table
-    console.log(`
-    id\t name
-    --\t -------------
-    `)
-    
+async function viewAllDepartments(){
+    // gets the data from the database
+    try{
+        const [data] = await db.promise().query("SELECT * FROM departments")
+        // since db returns an array within an array
+        
+        // display the departments in a nice formatted table
+        console.log(`id\t name\n--\t -------------`)
+
+        // iterate through the data to display everything
+        for(let i = 0; i < data.length; i++){
+            console.log(`${data[i].id}\t ${data[i].name}\n`)
+        }
+        
+    }catch (err) {
+        return console.log("Error while getting data from department")
+    }
 }
 
-function viewAllRoles() {
+async function viewAllRoles() {
+    try{
+        const [data] = await db.promise().query("SELECT * FROM roles")
+
+        console.log(`id title\t department\t salary`)
+        console.log(`-- ------\t ----------\t --------`)
+        for(let i = 0; i < data.length; i++){
+            console.log(`${data[i].id} ${data[i].title}\t ${data[i].salary}`)
+        }
+        
+    }catch(err){
+        return console.log("Error while getting data from roles")
+    }
+}
+
+async function addDepartment() {
+    const depPrompt = {
+        type: 'input',
+        message: 'Enter the name of the new department',
+        name: 'dptName'
+    }
+    try {
+        const {dptName} = inq.prompt(depPrompt)
+        await db.promise().query("INSERT INTO departments(name) VALUES (?)", dptName)
+    }catch(err){
+        return console.log("Error while adding department", err);
+    }
+}
+
+async function addRole() {
 
 }
 
-function addDepartment() {
-    
-}
-
-function addRole() {
+async function addEmployee() {
 
 }
 
-function addEmployee() {
-
-}
-
-function updateEmployeeRole() {
+async function updateEmployeeRole() {
 
 }
 
