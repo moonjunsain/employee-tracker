@@ -2,8 +2,7 @@
 const inq = require('inquirer');
 const express = require('express');
 const mysql = require('mysql2');
-const Employee = require('./classes/employee')
-const Role = require('./classes/role')
+
 
 const app = express();
 const PORT = 3001;
@@ -41,7 +40,8 @@ const rolePromptConstructor = (listOfDeptmnt) => {
         {
             type: 'list',
             message: 'What department does this role belong to?',
-            choices: listOfDeptmnt
+            choices: listOfDeptmnt,
+            name: 'depName'
         }
     ]
 } 
@@ -143,11 +143,17 @@ async function viewAllDepartments(){
 async function viewAllRoles() {
     try{
         const [data] = await db.promise().query("SELECT * FROM roles")
+        const[depData] = await db.promise().query("SELECT * FROM departments")
+        // create a hash map for id and dep name
+        let depObj = {}
+        for(let i = 0; i < depData.length; i++){
+            depObj[depData[i].id] = depData[i].name 
+        }
 
         console.log(`id title\t department\t salary`)
         console.log(`-- ------\t ----------\t --------`)
         for(let i = 0; i < data.length; i++){
-            console.log(`${data[i].id} ${data[i].title}\t ${data[i].salary}`)
+            console.log(`${data[i].id} ${data[i].title}\t ${depObj[data[i].id]}\t ${data[i].salary}`)
         }
         
     }catch(err){
@@ -170,7 +176,37 @@ async function addDepartment() {
 }
 
 async function addRole() {
-    
+    try {
+        // gets the data from departments to get the department list
+        const [data] = await db.promise().query("SELECT * FROM departments")
+        let depArry = []
+        for(let i = 0; i < data.length; i++){
+            // pushes all the name in the data (dep name)
+            depArry.push(data[i].name)
+        }
+        // calls the constructor function to form the array of question
+        const rolePrompt = rolePromptConstructor(depArry)
+
+        // asks the user questions
+        const {roleName, salary, depName} = await inq.prompt(rolePrompt)
+        
+        // looks for an id in the data using depName
+        let depId = null;
+        for(let i = 0; i < data.length; i++){
+            if(data[i].name == depName){
+                depId = data[i].id
+            }
+        }
+        if(depId == null){
+            throw new Error()
+        }
+        // calls the db to add a new role
+        await db.promise().query("INSERT INTO roles(title, salary, department_id) VALUES (?, ?, ?)", [roleName, salary, depId])
+
+    }catch(err){
+        return console.log("Error while trying to add roles")
+    }
+   
 }
 
 async function addEmployee() {
