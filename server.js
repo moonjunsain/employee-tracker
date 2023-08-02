@@ -89,12 +89,89 @@ async function promptHomeMenu(){
     return homeDecision
 }
 
-function init(){
-    let doLoop = true;
-    while(doLoop){
-        
+async function init(){
+    // create an infinite loop until the user chooses to Quit
+    while(true){
+        const decision = await promptHomeMenu()
+        if(decision == 'Quit'){
+            // break the loop when the user chooses to quit
+            break;
+        }
+        // execute different functions depending on user decision
+        switch (decision) {
+            case "View all departments":
+              viewAllDepartments();
+              break;
+            case "View all roles":
+              viewAllRoles();
+              break;
+            case "View all employees":
+              viewAllEmployees();
+              break;
+            case "Add a department":
+              addDepartment();
+              break;
+            case "Add a role":
+              addRole();
+              break;
+            case "Add an employee":
+              addEmployee();
+              break;
+            case "Update an employee role":
+              updateEmployeeRole();
+              break;
+          }
+
     }
 }
+
+function viewAllDepartments(){
+    // display the departments in a nice formatted table
+    console.log(`
+    id\t name
+    --\t -------------
+    `)
+    
+}
+
+function viewAllRoles() {
+
+}
+
+function addDepartment() {
+    
+}
+
+function addRole() {
+
+}
+
+function addEmployee() {
+
+}
+
+function updateEmployeeRole() {
+
+}
+
+
+// title screen 
+console.log(`
+______ __  __ _____  _      ______     __
+|  ____|  \\\/  |  __ \\\| |    / __ \\ \\   / /
+| |__  | \\  / | |__) | |   | |  | \\ \\\_/ / 
+|  __| | |\\\/| |  ___/| |   | |  | |\\   /  
+| |____| |  | | |    | |___| |__| | | |   
+|______|_|__|_|_|____|______\\\____/__|_|   
+|  ____|  ____|  ____|  ____|__   __|     
+| |__  | |__  | |__  | |__     | |        
+|  __| |  __| |  __| |  __|    | |        
+| |____| |____| |____| |____   | |        
+|______|______|______|______|  |_|        
+                                          
+`)
+
+init()
 
     
 
