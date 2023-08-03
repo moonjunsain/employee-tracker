@@ -40,3 +40,5 @@ CREATE TABLE employees(
     REFERENCES employees(id)
     ON DELETE SET NULL
 );
+
+SELECT * FROM employees LEFT JOIN employees ON employees.id = employees.manager_id;

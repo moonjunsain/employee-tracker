@@ -28,7 +28,16 @@ const rolePromptConstructor = (listOfDeptmnt) => {
         {
             type: 'input',
             message: 'Enter the name of the new role',
-            name: 'roleName'
+            name: 'roleName',
+            validate: function(input){
+                if(input.length >= 30){
+                    console.log("Please enter less than 30 characters")
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            }
         },
         {
             type: 'input',
@@ -49,12 +58,30 @@ const empPromptConstructor = (listOfRole, listOfManager) => {
         {
             type: 'input',
             message: 'Enter the first name for the new employee',
-            name: "firstName"
+            name: "firstName",
+            validate: function(input){
+                if(input.length >= 30){
+                    console.log("Please enter less than 30 characters")
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            }
         },
         {
             type: 'input',
             message: 'Enter the last name for the new employee',
-            name: "lastName"
+            name: "lastName",
+            validate: function(input){
+                if(input.length >= 30){
+                    console.log("Please enter less than 30 characters")
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            }
         },
         {
             type: 'list',
@@ -216,8 +243,10 @@ async function addEmployee() {
     try{
         // i need list of roles and list of employees
         // gets the data from data base
-        const [data] = await db.promise().query('SELECT first_name, last_name, title, roles.id AS role_id, employees.id AS employee_id FROM employees JOIN roles ON roles.id = employees.role_id')
+        const [dataEmp] = await db.promise().query('SELECT id, first_name, last_name FROM employees')
         
+
+        const [dataRole] = await db.promise().query('SELECT * FROM roles')
 
         // variable for all roles, names
         let roles = [];
@@ -227,15 +256,18 @@ async function addEmployee() {
         let roleTracker = {};
         let managerTracker = {};
 
-        for(let i = 0; i < data.length; i++){
+        for(let i = 0; i < dataEmp.length; i++){
             // construct a full name from data
-            let fullname = data[i].first_name + " " + data[i].last_name
+            let fullname = dataEmp[i].first_name + " " + dataEmp[i].last_name
             fullNames.push(fullname);
-            managerTracker[fullname] = data[i].employee_id
-
-            roles.push(data[i].title);
-            roleTracker[data[i].title] = data[i].role_id
+            managerTracker[fullname] = dataEmp[i].id
         }
+
+        for(let i = 0; i < dataRole.length; i++){
+            roles.push(dataRole[i].title)
+            roleTracker[dataRole[i].title] = dataRole[i].id
+        }
+
         const employeePrompt = empPromptConstructor(roles, fullNames)
         const {firstName, lastName, role, manager} = await inq.prompt(employeePrompt)
        
@@ -255,7 +287,22 @@ async function addEmployee() {
 }
 
 async function updateEmployeeRole() {
-    
+    try{
+        const [dataEmp] = await db.promise().query('SELECT id, first_name, last_name FROM employees')
+        let fullNames = [];
+        let managerTracker = {};
+
+        for(let i = 0; i < dataEmp.length; i++){
+            // construct a full name from data
+            let fullname = dataEmp[i].first_name + " " + dataEmp[i].last_name
+            fullNames.push(fullname);
+            managerTracker[fullname] = dataEmp[i].id
+        }
+
+
+    }catch(err){
+        return console.log("error while trying to update employee", err)
+    }
 }
 
 
