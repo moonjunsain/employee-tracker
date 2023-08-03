@@ -289,15 +289,47 @@ async function addEmployee() {
 async function updateEmployeeRole() {
     try{
         const [dataEmp] = await db.promise().query('SELECT id, first_name, last_name FROM employees')
-        let fullNames = [];
-        let managerTracker = {};
+        const [dataRole] = await db.promise().query('SELECT * FROM roles')
 
+        
+        let fullNames = [];
+        let empTracker = {};
+        
+        
         for(let i = 0; i < dataEmp.length; i++){
             // construct a full name from data
             let fullname = dataEmp[i].first_name + " " + dataEmp[i].last_name
             fullNames.push(fullname);
-            managerTracker[fullname] = dataEmp[i].id
+            empTracker[fullname] = dataEmp[i].id
         }
+        
+        let roles = [];
+        let roleTracker = {};
+
+        for(let i = 0; i < dataRole.length; i++){
+            roles.push(dataRole[i].title)
+            roleTracker[dataRole[i].title] = dataRole[i].id
+        }
+
+
+        const question = [
+            {
+                type: 'list',
+                message: 'Which employee do you like to update?',
+                choices: fullNames,
+                name: 'employee'
+            },
+            {
+                type: 'list',
+                message: 'Which role do you like to assign for this employee?',
+                choices: roles,
+                name: 'role'
+            }
+        ]
+
+        const {employee, role} = await inq.prompt(question)
+
+        await db.promise().query('UPDATE employees SET role_id = ? where id = ?', [roleTracker[role], empTracker[employee]])
 
 
     }catch(err){
