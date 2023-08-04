@@ -1,11 +1,9 @@
 // import all the required file
 const inq = require('inquirer');
-const express = require('express');
+
 const mysql = require('mysql2');
 const {Table} = require('console-table-printer')
 
-const app = express();
-const PORT = 3001;
 
 const db = mysql.createConnection({
     host: "localhost",
@@ -31,7 +29,7 @@ const rolePromptConstructor = (listOfDeptmnt) => {
             name: 'roleName',
             validate: function(input){
                 if(input.length >= 30){
-                    console.log("Please enter less than 30 characters")
+                    console.log("\nPlease enter less than 30 characters")
                     return false;
                 }
                 else {
@@ -61,7 +59,7 @@ const empPromptConstructor = (listOfRole, listOfManager) => {
             name: "firstName",
             validate: function(input){
                 if(input.length >= 30){
-                    console.log("Please enter less than 30 characters")
+                    console.log("\nPlease enter less than 30 characters")
                     return false;
                 }
                 else {
@@ -75,7 +73,7 @@ const empPromptConstructor = (listOfRole, listOfManager) => {
             name: "lastName",
             validate: function(input){
                 if(input.length >= 30){
-                    console.log("Please enter less than 30 characters")
+                    console.log("\nPlease enter less than 30 characters")
                     return false;
                 }
                 else {
@@ -107,8 +105,7 @@ async function promptHomeMenu(){
         "Add an employee", "Update an employee role", "Quit"],
         name: 'homeDecision'
     }
-    const answer = await inq.prompt(homePrompt)
-    const {homeDecision} = answer
+    const {homeDecision} = await inq.prompt(homePrompt)
     return homeDecision
 }
 
@@ -118,7 +115,8 @@ async function init(){
         const decision = await promptHomeMenu()
         if(decision == 'Quit'){
             // break the loop when the user chooses to quit
-            break;
+            console.log("Bye!")
+            return;
         }
         // execute different functions depending on user decision
         switch (decision) {
@@ -180,11 +178,17 @@ async function viewAllRoles() {
 
 async function viewAllEmployees(){
     try{
-        const [data] = await db.promise().query('SELECT employees.id, first_name, last_name, title, salary, departments.name AS department, manager_id FROM employees LEFT JOIN roles ON roles.id = employees.role_id LEFT JOIN departments ON roles.department_id = departments.id')
+        const queryScript = `SELECT a.id AS id, a.first_name, a.last_name, b.first_name AS manager, roles.title AS title, roles.salary AS salary, departments.name AS department
+        FROM employees a
+        LEFT JOIN employees b ON a.manager_id = b.id
+        LEFT JOIN roles ON roles.id = a.role_id 
+        LEFT JOIN departments ON roles.department_id = departments.id
+        ORDER BY department`
+        const [data] = await db.promise().query(queryScript)
         const table = new Table()
         for(let i = 0; i < data.length; i++){
-            if(data[i].manager_id == null){
-                data[i].manager_id = 'None'
+            if(data[i].manager == null){
+                data[i].manager = 'None'
             }
         }
         table.addRows(data)
@@ -198,15 +202,26 @@ async function addDepartment() {
     const depPrompt = {
         type: 'input',
         message: 'Enter the name of the new department',
-        name: 'dptName'
+        name: 'dptName',
+        validate: function(input){
+            if(input.length >= 30){
+                console.log("\nPlease enter less than 30 characters")
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
     }
     try {
         const {dptName} = await inq.prompt(depPrompt)
         await db.promise().query("INSERT INTO departments (name) VALUES (?)", [dptName])
+        console.log(`\n========= ${dptName} was added =========\n`)
     }catch(err){
         return console.log("Error while adding department", err);
     }
 }
+
 
 async function addRole() {
     try {
@@ -230,6 +245,7 @@ async function addRole() {
 
         // calls the db to add a new role
         await db.promise().query("INSERT INTO roles(title, salary, department_id) VALUES (?, ?, ?)", [roleName, salary, depId])
+        console.log(`\n========= ${roleName} was added to ${depName} =========\n`)
 
     }catch(err){
         return console.log("Error while trying to add roles", err)
@@ -280,6 +296,7 @@ async function addEmployee() {
             managerId = managerTracker[manager]
         }
         await db.promise().query('INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [firstName, lastName, roleTracker[role], managerId])
+        console.log(`\n========= ${firstName} was added as ${role} =========\n`)
 
     }catch(error){
         return console.log("Error while trying to add employee", error)
@@ -330,6 +347,7 @@ async function updateEmployeeRole() {
         const {employee, role} = await inq.prompt(question)
 
         await db.promise().query('UPDATE employees SET role_id = ? where id = ?', [roleTracker[role], empTracker[employee]])
+        console.log(`\n========= ${employee} is now ${role} =========\n`)
 
 
     }catch(err){
@@ -357,7 +375,3 @@ ______ __  __ _____  _      ______     __
 init()
 
     
-
-app.listen(PORT, ()=> {
-    console.log(`Server running on port ${PORT}`)
-})
