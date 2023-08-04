@@ -21,7 +21,7 @@ db.connect((err)=> {
 })
 
 
-// construct question for adding a role
+// construct question for adding a role with updated list of dep
 const rolePromptConstructor = (listOfDeptmnt) => {
     return [
         {
@@ -52,7 +52,7 @@ const rolePromptConstructor = (listOfDeptmnt) => {
     ]
 } 
 
-// construct a question for adding an employee
+// construct a question for adding an employee with updated list of employee and role
 const empPromptConstructor = (listOfRole, listOfManager) => {
     return [
         {
@@ -205,6 +205,7 @@ async function viewAllEmployees(){
 }
 
 async function addDepartment() {
+    // construct a question for user
     const depPrompt = {
         type: 'input',
         message: 'Enter the name of the new department',
@@ -220,7 +221,10 @@ async function addDepartment() {
         }
     }
     try {
+        // gets user input
         const {dptName} = await inq.prompt(depPrompt)
+
+        // insert into database table
         await db.promise().query("INSERT INTO departments (name) VALUES (?)", [dptName])
         console.log(`\n========= ${dptName} was added =========\n`)
     }catch(err){
@@ -259,8 +263,8 @@ async function addEmployee() {
         const dataEmp = await db.promise().query('SELECT id value, concat(first_name, " ", last_name) name FROM employees')
 
         const dataRole = await db.promise().query('SELECT id value, title name FROM roles')
-        console.log(dataRole);
-
+        
+        // construct prompt
         const employeePrompt = empPromptConstructor(dataRole[0], dataEmp[0])
         const {firstName, lastName, role, manager} = await inq.prompt(employeePrompt)
 
@@ -274,9 +278,11 @@ async function addEmployee() {
 
 async function updateEmployeeRole() {
     try{
+        // gets data for employee and role for choices
         const [dataEmp] = await db.promise().query('SELECT id value, concat(first_name, "  ", last_name) name FROM employees')
         const [dataRole] = await db.promise().query('SELECT id value, title name FROM roles')
 
+        // construct questions
         const question = [
             {
                 type: 'list',
@@ -292,8 +298,10 @@ async function updateEmployeeRole() {
             }
         ]
 
+        // gets the user input
         const {employee, role} = await inq.prompt(question)
 
+        // update new employee
         await db.promise().query('UPDATE employees SET role_id = ? where id = ?', [role, employee])
         console.log(`\n========= updated =========\n`)
 

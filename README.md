@@ -57,7 +57,7 @@ npm i
 Following is the demo of this app.
 The user can view employees, departments, roles and or add a new employee, department, role, also they can update an employee so that they can assign a different role to them.
 
-![demo](./demo/demo-note-taker.gif)
+[demo](https://drive.google.com/file/d/1Ttu2UJIATDWnVN9UlOBZN440uhuc-KnI/view)
 
 
 ## Learning Points
