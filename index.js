@@ -17,10 +17,11 @@ db.connect((err)=> {
         return console.log("database failed to connect", err)
     }
     console.log("Connected to database")
+    init()
 })
 
 
-
+// construct question for adding a role
 const rolePromptConstructor = (listOfDeptmnt) => {
     return [
         {
@@ -51,6 +52,7 @@ const rolePromptConstructor = (listOfDeptmnt) => {
     ]
 } 
 
+// construct a question for adding an employee
 const empPromptConstructor = (listOfRole, listOfManager) => {
     return [
         {
@@ -116,7 +118,8 @@ async function init(){
         if(decision == 'Quit'){
             // break the loop when the user chooses to quit
             console.log("Bye!")
-            return;
+            process.exit(0)
+            
         }
         // execute different functions depending on user decision
         switch (decision) {
@@ -178,6 +181,7 @@ async function viewAllRoles() {
 
 async function viewAllEmployees(){
     try{
+        // self join to see associated manager
         const queryScript = `SELECT a.id AS id, a.first_name, a.last_name, b.first_name AS manager, roles.title AS title, roles.salary AS salary, departments.name AS department
         FROM employees a
         LEFT JOIN employees b ON a.manager_id = b.id
@@ -186,6 +190,8 @@ async function viewAllEmployees(){
         ORDER BY department`
         const [data] = await db.promise().query(queryScript)
         const table = new Table()
+
+        // change all nulls to None
         for(let i = 0; i < data.length; i++){
             if(data[i].manager == null){
                 data[i].manager = 'None'
@@ -226,26 +232,17 @@ async function addDepartment() {
 async function addRole() {
     try {
         // gets the data from departments to get the department list
-        const [data] = await db.promise().query("SELECT * FROM departments")
-        let depArry = []
-        let depTracker = {}
-        for(let i = 0; i < data.length; i++){
-            // pushes all the name in the data (dep name)
-            depArry.push(data[i].name)
-            depTracker[data[i].name] = data[i].id
-        }
+        const [data] = await db.promise().query("SELECT id value, name FROM departments")
+        
         // calls the constructor function to form the array of question
-        const rolePrompt = rolePromptConstructor(depArry)
+        const rolePrompt = rolePromptConstructor(data)
 
         // asks the user questions
         const {roleName, salary, depName} = await inq.prompt(rolePrompt)
-        
-        // looks for an id in the data using depName
-        const depId = depTracker[depName]
 
         // calls the db to add a new role
-        await db.promise().query("INSERT INTO roles(title, salary, department_id) VALUES (?, ?, ?)", [roleName, salary, depId])
-        console.log(`\n========= ${roleName} was added to ${depName} =========\n`)
+        await db.promise().query("INSERT INTO roles(title, salary, department_id) VALUES (?, ?, ?)", [roleName, salary, depName])
+        console.log(`\n========= new role added =========\n`)
 
     }catch(err){
         return console.log("Error while trying to add roles", err)
@@ -259,44 +256,16 @@ async function addEmployee() {
     try{
         // i need list of roles and list of employees
         // gets the data from data base
-        const [dataEmp] = await db.promise().query('SELECT id, first_name, last_name FROM employees')
-        
+        const dataEmp = await db.promise().query('SELECT id value, concat(first_name, " ", last_name) name FROM employees')
 
-        const [dataRole] = await db.promise().query('SELECT * FROM roles')
+        const dataRole = await db.promise().query('SELECT id value, title name FROM roles')
+        console.log(dataRole);
 
-        // variable for all roles, names
-        let roles = [];
-        let fullNames = [];
-
-        // to keep track of the id
-        let roleTracker = {};
-        let managerTracker = {};
-
-        for(let i = 0; i < dataEmp.length; i++){
-            // construct a full name from data
-            let fullname = dataEmp[i].first_name + " " + dataEmp[i].last_name
-            fullNames.push(fullname);
-            managerTracker[fullname] = dataEmp[i].id
-        }
-
-        for(let i = 0; i < dataRole.length; i++){
-            roles.push(dataRole[i].title)
-            roleTracker[dataRole[i].title] = dataRole[i].id
-        }
-
-        const employeePrompt = empPromptConstructor(roles, fullNames)
+        const employeePrompt = empPromptConstructor(dataRole[0], dataEmp[0])
         const {firstName, lastName, role, manager} = await inq.prompt(employeePrompt)
-       
 
-
-        let managerId = 0
-        if(manager == 'None'){
-            managerId = null
-        }else {
-            managerId = managerTracker[manager]
-        }
-        await db.promise().query('INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [firstName, lastName, roleTracker[role], managerId])
-        console.log(`\n========= ${firstName} was added as ${role} =========\n`)
+        await db.promise().query('INSERT INTO employees(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)', [firstName, lastName, role, manager])
+        console.log(`\n========= Employee added =========\n`)
 
     }catch(error){
         return console.log("Error while trying to add employee", error)
@@ -305,49 +274,28 @@ async function addEmployee() {
 
 async function updateEmployeeRole() {
     try{
-        const [dataEmp] = await db.promise().query('SELECT id, first_name, last_name FROM employees')
-        const [dataRole] = await db.promise().query('SELECT * FROM roles')
-
-        
-        let fullNames = [];
-        let empTracker = {};
-        
-        
-        for(let i = 0; i < dataEmp.length; i++){
-            // construct a full name from data
-            let fullname = dataEmp[i].first_name + " " + dataEmp[i].last_name
-            fullNames.push(fullname);
-            empTracker[fullname] = dataEmp[i].id
-        }
-        
-        let roles = [];
-        let roleTracker = {};
-
-        for(let i = 0; i < dataRole.length; i++){
-            roles.push(dataRole[i].title)
-            roleTracker[dataRole[i].title] = dataRole[i].id
-        }
-
+        const [dataEmp] = await db.promise().query('SELECT id value, concat(first_name, "  ", last_name) name FROM employees')
+        const [dataRole] = await db.promise().query('SELECT id value, title name FROM roles')
 
         const question = [
             {
                 type: 'list',
                 message: 'Which employee do you like to update?',
-                choices: fullNames,
+                choices: dataEmp,
                 name: 'employee'
             },
             {
                 type: 'list',
                 message: 'Which role do you like to assign for this employee?',
-                choices: roles,
+                choices: dataRole,
                 name: 'role'
             }
         ]
 
         const {employee, role} = await inq.prompt(question)
 
-        await db.promise().query('UPDATE employees SET role_id = ? where id = ?', [roleTracker[role], empTracker[employee]])
-        console.log(`\n========= ${employee} is now ${role} =========\n`)
+        await db.promise().query('UPDATE employees SET role_id = ? where id = ?', [role, employee])
+        console.log(`\n========= updated =========\n`)
 
 
     }catch(err){
@@ -372,6 +320,6 @@ ______ __  __ _____  _      ______     __
                                           
 `)
 
-init()
+
 
     
